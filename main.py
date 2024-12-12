@@ -1,76 +1,45 @@
-local Player = game.Players.LocalPlayer
-local Character = Player.Character or Player.CharacterAdded:Wait()
-local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 
-local speed = 50 -- Tốc độ bay
-local flying = false -- Mặc định là không bay
+-- Tạo một hàm để cập nhật ESP cho tất cả người chơi
+local function createESP(player)
+    local character = player.Character
+    if not character then return end
+    
+    -- Thêm một phần để làm sáng người chơi, ví dụ: một khung hình xung quanh họ
+    local highlight = Instance.new("Highlight")
+    highlight.Parent = character
+    highlight.FillColor = Color3.fromRGB(255, 0, 0) -- Màu sắc viền
+    highlight.OutlineColor = Color3.fromRGB(255, 255, 255) -- Màu sắc viền ngoài
+    highlight.Thickness = 0.3 -- Độ dày của viền
 
--- Tạo GUI cho Start và Stop
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Parent = Player.PlayerGui
-
-local StartButton = Instance.new("TextButton")
-StartButton.Parent = ScreenGui
-StartButton.Size = UDim2.new(0, 200, 0, 50)
-StartButton.Position = UDim2.new(0.5, -100, 0.5, -25)
-StartButton.Text = "Start Flying"
-StartButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-
-local StopButton = Instance.new("TextButton")
-StopButton.Parent = ScreenGui
-StopButton.Size = UDim2.new(0, 200, 0, 50)
-StopButton.Position = UDim2.new(0.5, -100, 0.5, 25)
-StopButton.Text = "Stop Flying"
-StopButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-
--- Tạo BodyGyro và BodyVelocity
-local bodyGyro = Instance.new("BodyGyro", HumanoidRootPart)
-local bodyVelocity = Instance.new("BodyVelocity", HumanoidRootPart)
-
-bodyGyro.P = 9e4
-bodyGyro.MaxTorque = Vector3.new(9e4, 9e4, 9e4)
-bodyGyro.CFrame = HumanoidRootPart.CFrame
-
-bodyVelocity.MaxForce = Vector3.new(9e4, 9e4, 9e4)
-bodyVelocity.Velocity = Vector3.zero
-
--- Hàm bắt đầu bay
-local function startFlying()
-    flying = true
-    StartButton.Visible = false
-    StopButton.Visible = true
+    -- Khi nhân vật thay đổi, ta cũng sẽ cập nhật ESP
+    character:WaitForChild("HumanoidRootPart")
 end
 
--- Hàm dừng bay
-local function stopFlying()
-    flying = false
-    bodyVelocity.Velocity = Vector3.zero
-    StartButton.Visible = true
-    StopButton.Visible = false
+-- Đảm bảo rằng mỗi người chơi đều có ESP
+Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function()
+        createESP(player)
+    end)
+end)
+
+-- Thêm ESP cho những người chơi đã có mặt khi script bắt đầu
+for _, player in ipairs(Players:GetPlayers()) do
+    if player.Character then
+        createESP(player)
+    end
 end
 
--- Sự kiện khi nhấn nút Start
-StartButton.MouseButton1Click:Connect(function()
-    startFlying()
-end)
-
--- Sự kiện khi nhấn nút Stop
-StopButton.MouseButton1Click:Connect(function()
-    stopFlying()
-end)
-
--- Ẩn nút Stop khi bắt đầu
-StopButton.Visible = false
-
--- Hàm xử lý bay
-game:GetService("RunService").RenderStepped:Connect(function()
-    if flying then
-        local direction = Vector3.zero
-        
-        -- Di chuyển dựa trên góc nhìn camera
-        direction = direction + workspace.CurrentCamera.CFrame.LookVector
-
-        bodyVelocity.Velocity = direction * speed
-        bodyGyro.CFrame = workspace.CurrentCamera.CFrame
+-- Đảm bảo cập nhật liên tục
+RunService.RenderStepped:Connect(function()
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player.Character then
+            local highlight = player.Character:FindFirstChildOfClass("Highlight")
+            if highlight then
+                -- Cập nhật lại vị trí nếu cần thiết (chắc chắn người chơi được theo dõi)
+                highlight.Adornee = player.Character
+            end
+        end
     end
 end)
