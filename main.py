@@ -1,6 +1,7 @@
 local Player = game.Players.LocalPlayer
 local Character = Player.Character or Player.CharacterAdded:Wait()
 local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+local Humanoid = Character:WaitForChild("Humanoid")
 
 local speed = 50 -- Tốc độ bay
 local flying = true -- Mặc định là bay
@@ -19,12 +20,15 @@ bodyVelocity.Velocity = Vector3.zero
 -- Hàm xử lý bay
 game:GetService("RunService").RenderStepped:Connect(function()
     if flying then
-        local direction = Vector3.zero
-        
-        -- Di chuyển dựa trên góc nhìn camera
-        direction = direction + workspace.CurrentCamera.CFrame.LookVector
+        -- Lấy hướng di chuyển từ joystick (MoveDirection)
+        local moveDirection = Humanoid.MoveDirection
+        if moveDirection.Magnitude > 0 then
+            bodyVelocity.Velocity = moveDirection * speed
+        else
+            bodyVelocity.Velocity = Vector3.zero
+        end
 
-        bodyVelocity.Velocity = direction * speed
+        -- Đặt hướng nhìn theo camera
         bodyGyro.CFrame = workspace.CurrentCamera.CFrame
     end
 end)
